@@ -2,7 +2,8 @@ streamlit>=1.28.0
 langchain>=0.0.329
 langchain-community>=0.0.20
 transformers>=4.39.3
-faiss-cpu>=1.7.4
 torch>=2.0.0
 sentence-transformers>=2.2.2
+faiss-cpu>=1.7.4
+langchain-text-splitters>=0.0.1
 numpy==1.24.4
