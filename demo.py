@@ -1,7 +1,7 @@
 # pip install streamlit faiss-cpu sentence-transformers langchain transformers langchain_community
 
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import pipeline
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -26,48 +26,37 @@ def load_retriever():
 
 retriever = load_retriever()
 
-# Load mô hình sinh tiếng Việt
+# Load mô hình sinh tiếng Việt 
 @st.cache_resource
 def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("VietAI/gpt-neo-1.3B-vietnamese-news")
-    model = AutoModelForCausalLM.from_pretrained("VietAI/gpt-neo-1.3B-vietnamese-news")
-    return tokenizer, model
+    return pipeline("text-generation", model="NlpHUST/gpt2-vietnamese", repetition_penalty=1.3)
 
-tokenizer, model = load_model()
+generator = load_model()
 
-# Hàm sinh câu trả lời 
+# Hàm sinh câu trả lời
 def generate_answer(query):
     docs = retriever.get_relevant_documents(query)
-    context = "\n".join([doc.page_content for doc in docs[:3]])
-    
-    if not docs or len(docs) == 0:
+
+    if not docs:
         return "Xin lỗi, tôi không tìm thấy thông tin phù hợp để trả lời câu hỏi này."
 
-    prompt = f"""Dựa trên ngữ cảnh sau, hãy trả lời câu hỏi một cách ngắn gọn và dễ hiểu:
-            Ngữ cảnh:
-            {context}
+    context = "\n".join([doc.page_content for doc in docs[:3]])
 
-            Câu hỏi:
-            {query}
+    prompt = f"""Bạn là trợ lý tuyển sinh FPT Polytechnic. Chỉ sử dụng thông tin trong phần NGỮ CẢNH để trả lời câu hỏi."
+                NGỮ CẢNH: {context}
+                CÂU HỎI: {query}
+                TRẢ LỜI:
+              """
 
-            Trả lời:"""
+    output = generator(prompt, max_new_tokens=100, do_sample=True, top_p=0.85, temperature=0.7, truncation=True)[0]["generated_text"]
+    answer = output[len(prompt):].strip()
 
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024)
-    outputs = model.generate(
-            **inputs,
-            max_new_tokens=200,
-            do_sample=True,
-            top_p=0.9,
-            top_k=50,
-            temperature=0.8,
-            repetition_penalty=1.2,  # giảm lặp lại
-            eos_token_id=tokenizer.eos_token_id  # dừng tại kết thúc câu
-            )
+    for end in [".", "\n", "•", ":"]:
+        if end in answer:
+            answer = answer.split(end)[0] + end
+            break
 
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    generated = response[len(prompt):].strip()
-    cleaned = generated.split("\n")[0].strip()
-    return cleaned
+    return answer.strip()
 
 
 # Giao diện người dùng
