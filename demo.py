@@ -12,7 +12,7 @@ import os
 st.set_page_config(page_title="FPT Chatbot", layout="centered")
 st.title("🤖 Chatbot hỗ trợ tuyển sinh FPT Polytechnic")
 
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+api_key = st.secrets["OPENAI_API_KEY"]
 
 def load_retriever():
     with open("tuyensinh.txt", "r", encoding="utf-8") as f:
@@ -21,7 +21,7 @@ def load_retriever():
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     texts = splitter.split_text(raw_text)
 
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
     vectorstore = FAISS.from_texts(texts, embedding=embeddings)
 
     return vectorstore.as_retriever()
@@ -29,7 +29,7 @@ def load_retriever():
 retriever = load_retriever()
 
 # Load mô hình GPT từ OpenAI
-llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.7)
+llm = ChatOpenAI(openai_api_key=api_key, model_name="gpt-3.5-turbo", temperature=0.7)
 
 # Tạo chuỗi RAG
 qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever, return_source_documents=False)
