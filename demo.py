@@ -1,4 +1,4 @@
-# pip install streamlit openai faiss-cpu sentence-transformers langchain transformers langchain_community
+# pip install streamlit openai faiss-cpu langchain langchain_community
 
 import streamlit as st
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,6 +11,8 @@ import os
 # Cấu hình Streamlit
 st.set_page_config(page_title="FPT Chatbot", layout="centered")
 st.title("🤖 Chatbot hỗ trợ tuyển sinh FPT Polytechnic")
+
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 def load_retriever():
     with open("tuyensinh.txt", "r", encoding="utf-8") as f:
